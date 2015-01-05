@@ -1,0 +1,33 @@
+{
+  "name": "flappy-birthday",
+  "version": "1.0.0",
+  "description": "Flappy birthday game server",
+  "main": "server.js",
+  "dependencies": {
+    "express": "4.x",
+    "express-session": "1.x",
+    "body-parser": "1.x"
+  },
+  "engines": {
+    "node": "0.10.x"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/eternalthinker/flappy-birthday.git"
+  },
+  "keywords": [
+    "nodejs",
+    "flappy bird",
+    "birthday"
+  ],
+  "author": "Rahul Anand",
+  "license": "Apache 2.0",
+  "bugs": {
+    "url": "https://github.com/eternalthinker/flappy-birthday/issues"
+  },
+  "homepage": "https://github.com/eternalthinker/flappy-birthday"
+}

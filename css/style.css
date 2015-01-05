@@ -9,6 +9,9 @@ body {
     border-radius: 1px;
 }
 
-/* Generated with TWBS Color */
-
-/* End of Generated with TWBS Color */
+.flex-parent {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+}
