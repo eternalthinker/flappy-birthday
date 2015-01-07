@@ -1,8 +1,8 @@
-PixelPals
-============
+Flappy Birthday
+================
 
-Web based public collaborative pixel canvas.
+Flappy Bird clone in Phaser.js, which is made as a birthday wish
 
-*A Heroku deployed version can be viewed [**here**](https://pixelpals.herokuapp.com) (Data cleared after 1 hour inactivity)*  
-
-*A firebase backed version can be viewed [**here**](https://eternalthinker.github.io/pixelpals) (Persistent data)*
+*A public working version can be viewed [**here**](https://eternalthinker.github.io/flappy-birthday)*  
+  
+The optional Node.js components implement basic authentication with secret code.
