@@ -11,17 +11,30 @@
 
 $(document).ready(function() {
 
+var GAP = 0;
+var SPEED = 200;
 var game = new Phaser.Game(400, 490, Phaser.AUTO, 'game');
 
 var mainState = {
     preload: function() { 
         game.stage.backgroundColor = '#71c5cf';
         game.load.image('bird', 'assets/bird.png'); 
-        game.load.image('pipe', 'assets/pipe.png');  
+        game.load.image('bottom_pipe', 'assets/bottom_pipe.png');  
         game.load.audio('jump', 'assets/jump.wav'); 
     },
 
     create: function() { 
+        // Pipes
+        this.pipes = game.add.group(); 
+        this.pipes.enableBody = true;  
+        this.pipes.createMultiple(10, 'bottom_pipe'); 
+
+        this.invisibles = game.add.group();
+        this.invisibles.enableBody = true;
+        this.invisibles.createMultiple(5);
+
+        this.timer = game.time.events.loop(1500, this.addRowOfPipes, this); 
+        
         // Bird
         game.physics.startSystem(Phaser.Physics.ARCADE);
 
@@ -35,16 +48,12 @@ var mainState = {
 
         this.jumpSound = game.add.audio('jump');  
 
-        // Pipes
-        this.pipes = game.add.group(); 
-        this.pipes.enableBody = true;  
-        this.pipes.createMultiple(20, 'pipe'); 
-
-        this.timer = game.time.events.loop(1500, this.addRowOfPipes, this); 
 
         // Score
         this.score = 0;  
         this.labelScore = game.add.text(20, 20, "0", { font: "30px Arial", fill: "#ffffff" }); 
+
+        GAP = Math.floor(this.bird.height * 2.5);
     },
 
     update: function() {
@@ -53,9 +62,10 @@ var mainState = {
         }
 
         game.physics.arcade.overlap(this.bird, this.pipes, this.hitPipe, null, this); 
+        game.physics.arcade.overlap(this.bird, this.invisibles, this.incrementScore, null, this); 
 
-        if (this.bird.angle < 20) {
-            this.bird.angle += 1;
+        if (this.bird.angle > -90) {
+            this.bird.angle -= 1;
         }
     },
 
@@ -68,8 +78,8 @@ var mainState = {
         this.bird.body.velocity.y = -350;
 
         var animation = game.add.tween(this.bird);
-        animation.to({angle: -20}, 100);
-        animation.start();  
+        animation.to({angle: 20}, 100);
+        animation.start();
     },
 
     hitPipe: function() {  
@@ -84,32 +94,51 @@ var mainState = {
         this.pipes.forEachAlive(function(p){
             p.body.velocity.x = 0;
         }, this);
+        this.invisibles.forEachAlive(function(inv){
+            inv.body.velocity.x = 0;
+        }, this);
     },
 
     restartGame: function() {  
         game.state.start('main');
     },
 
-    addOnePipe: function(x, y) {  
+    addOnePipe: function (yMidGap, flip) {  
         var pipe = this.pipes.getFirstDead();
-        pipe.reset(x, y);
-        pipe.body.velocity.x = -200; 
-
+        pipe.reset(game.width, yMidGap + (flip? -GAP: GAP)/2 );
+        // Flip physically - do this only AFTER setting y_pos
+        if (flip) { 
+            pipe.scale.y = -1;
+            pipe.body.offset.y = -pipe.body.height;
+        }
+        pipe.body.velocity.x = -SPEED; 
         pipe.checkWorldBounds = true;
         pipe.outOfBoundsKill = true;
+
+        return pipe;
     },
 
-    addRowOfPipes: function() {  
-        // Pick where the hole will be
-        var hole = Math.floor(Math.random() * 5) + 1;
+    addRowOfPipes: function () {  
+        // Pick the middle y_pos of the gap
+        var yMidGap = Math.floor( game.world.height/2 + (Math.random() > 0.5 ? 1 : -1) * Math.random() * game.world.height/4 );
+        //var yMidGap = Math.floor( game.world.height/2 + (Math.random() > 0.5 ? 1 : 0) * game.world.height/4 );
 
-        // Add the 6 pipes 
-        for (var i = 0; i < 8; i++) {
-            if (i != hole && i != hole + 1) {
-                this.addOnePipe(400, i * 60 + 10);   
-            }
-        }
+        //( (game.height - 16 - o() / 2) / 2 ) + (Math.random() > 0.5 ? -1 : 1) * Math.random() * game.height / 6;
 
+        // Add pipes
+        var bottomPipe = this.addOnePipe(yMidGap, false);
+        this.addOnePipe(yMidGap, true);
+
+        // Add invisible score tester
+        var invisible = this.invisibles.getFirstDead();
+        invisible.reset(bottomPipe.x + bottomPipe.width, 0)
+        invisible.width = 2;
+        invisible.height = game.world.height;
+        invisible.body.velocity.x = -SPEED;
+    },
+
+    incrementScore: function (_, invisible) {
+        invisible.kill();
         this.score += 1;  
         this.labelScore.text = this.score; 
     },
