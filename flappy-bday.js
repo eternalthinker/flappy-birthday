@@ -23,6 +23,9 @@ var mainState = {
         game.load.image('ground', 'assets/ground.png');  
 
         game.load.audio('jump', 'assets/jump.wav'); 
+        game.load.audio('pipe-hit', 'assets/pipe-hit.wav'); 
+        game.load.audio('ground-hit', 'assets/ground-hit.wav'); 
+        game.load.audio('score', 'assets/score.wav'); 
     },
 
     create: function() { 
@@ -50,6 +53,9 @@ var mainState = {
         var spaceKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
         spaceKey.onDown.add(this.jump, this);
         this.jumpSound = game.add.audio('jump');  
+        this.pipeHitSound = game.add.audio('pipe-hit');
+        this.groundHitSound = game.add.audio('ground-hit');
+        this.scoreSound = game.add.audio('score');
 
         // Ground
         this.groundH = game.cache.getImage('ground').height;
@@ -67,23 +73,25 @@ var mainState = {
     },
 
     update: function() {
-        game.debug.body(this.bird);
+        //game.debug.body(this.bird);
 
         if (this.bird.inWorld == false) {
             this.restartGame();
         }
 
-        game.physics.arcade.overlap(this.bird, this.pipes, this.hitPipe, null, this); 
+        game.physics.arcade.overlap(this.bird, this.pipes, this.die, null, this); 
         game.physics.arcade.overlap(this.bird, this.invisibles, this.incrementScore, null, this); 
-        game.physics.arcade.collide(this.bird, this.ground, function () { this.bird.onGround = true; }, null, this);
+        game.physics.arcade.collide(this.bird, this.ground, this.hitGround, null, this);
 
         if (this.bird.alive && this.bird.angle > -90) {
             this.bird.angle -= 1;
         } 
-        else if (!this.bird.alive && !this.bird.onGround && this.bird.angle > -90) {
-            this.bird.angle -= 3;
+        else if (!this.bird.alive  && this.bird.angle > -180) {
+            this.bird.angle -= 10;
+            if (this.bird.angle > 0 && this.bird.angle > 160) {
+                this.bird.angle = -180;
+            }
         }
-        this.bird.body.polygon.rotate(this.bird.rotation);
     },
 
     jump: function() {  
@@ -99,11 +107,14 @@ var mainState = {
         animation.start();
     },
 
-    hitPipe: function() {  
+    die: function() {  
         if (! this.bird.alive) {
             return;
         }
 
+        if (! this.bird.onGround) {
+            this.pipeHitSound.play();
+        }
         this.bird.alive = false;
         // Prevent new pipes from appearing
         game.time.events.remove(this.timer);
@@ -115,6 +126,16 @@ var mainState = {
             inv.body.velocity.x = 0;
         }, this);
         this.ground.autoScroll(0, 0);
+    },
+
+    hitGround: function () {
+        if (this.bird.onGround) {
+            return;
+        }
+
+        this.groundHitSound.play();
+        this.bird.onGround = true;
+        $.proxy(this.die, this)();
     },
 
     restartGame: function() {  
@@ -156,6 +177,7 @@ var mainState = {
     },
 
     incrementScore: function (_, invisible) {
+        this.scoreSound.play();
         invisible.kill();
         this.score += 1;  
         this.labelScore.text = this.score; 
