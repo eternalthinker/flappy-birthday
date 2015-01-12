@@ -13,17 +13,21 @@ $(document).ready(function() {
 
 var GAP = 0;
 var SPEED = 200;
-var game = new Phaser.Game(400, 490, Phaser.AUTO, 'game');
+var game = new Phaser.Game(400, 600, Phaser.AUTO, 'game');
 
 var mainState = {
     preload: function() { 
         game.stage.backgroundColor = '#71c5cf';
         game.load.image('bird', 'assets/bird.png'); 
         game.load.image('bottom_pipe', 'assets/bottom_pipe.png');  
+        game.load.image('ground', 'assets/ground.png');  
+
         game.load.audio('jump', 'assets/jump.wav'); 
     },
 
     create: function() { 
+        game.physics.startSystem(Phaser.Physics.ARCADE);
+
         // Pipes
         this.pipes = game.add.group(); 
         this.pipes.enableBody = true;  
@@ -34,20 +38,26 @@ var mainState = {
         this.invisibles.createMultiple(5);
 
         this.timer = game.time.events.loop(1500, this.addRowOfPipes, this); 
-        
-        // Bird
-        game.physics.startSystem(Phaser.Physics.ARCADE);
 
-        this.bird = this.game.add.sprite(100, 245, 'bird');
+        // Bird
+        this.bird = game.add.sprite(100, 245, 'bird');
         game.physics.arcade.enable(this.bird);
         this.bird.body.gravity.y = 1000;  
         this.bird.anchor.setTo(-0.2, 0.5); 
+        this.bird.onGround = false;
+        this.bird.body.allowRotation = true;
 
         var spaceKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
         spaceKey.onDown.add(this.jump, this);
-
         this.jumpSound = game.add.audio('jump');  
 
+        // Ground
+        this.groundH = game.cache.getImage('ground').height;
+        this.skyH = game.world.height - this.groundH;
+        this.ground = game.add.tileSprite(0, this.skyH, game.world.width, this.groundH, 'ground');
+        game.physics.arcade.enable(this.ground);
+        this.ground.body.immovable = true;
+        this.ground.autoScroll(-SPEED, 0);
 
         // Score
         this.score = 0;  
@@ -57,16 +67,23 @@ var mainState = {
     },
 
     update: function() {
+        game.debug.body(this.bird);
+
         if (this.bird.inWorld == false) {
             this.restartGame();
         }
 
         game.physics.arcade.overlap(this.bird, this.pipes, this.hitPipe, null, this); 
         game.physics.arcade.overlap(this.bird, this.invisibles, this.incrementScore, null, this); 
+        game.physics.arcade.collide(this.bird, this.ground, function () { this.bird.onGround = true; }, null, this);
 
-        if (this.bird.angle > -90) {
+        if (this.bird.alive && this.bird.angle > -90) {
             this.bird.angle -= 1;
+        } 
+        else if (!this.bird.alive && !this.bird.onGround && this.bird.angle > -90) {
+            this.bird.angle -= 3;
         }
+        this.bird.body.polygon.rotate(this.bird.rotation);
     },
 
     jump: function() {  
@@ -97,6 +114,7 @@ var mainState = {
         this.invisibles.forEachAlive(function(inv){
             inv.body.velocity.x = 0;
         }, this);
+        this.ground.autoScroll(0, 0);
     },
 
     restartGame: function() {  
@@ -120,7 +138,7 @@ var mainState = {
 
     addRowOfPipes: function () {  
         // Pick the middle y_pos of the gap
-        var yMidGap = Math.floor( game.world.height/2 + (Math.random() > 0.5 ? 1 : -1) * Math.random() * game.world.height/4 );
+        var yMidGap = Math.floor( this.skyH/2 + (Math.random() > 0.5 ? 1 : -1) * Math.random() * this.skyH/4 );
         //var yMidGap = Math.floor( game.world.height/2 + (Math.random() > 0.5 ? 1 : 0) * game.world.height/4 );
 
         //( (game.height - 16 - o() / 2) / 2 ) + (Math.random() > 0.5 ? -1 : 1) * Math.random() * game.height / 6;
