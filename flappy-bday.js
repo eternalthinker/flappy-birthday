@@ -3,6 +3,11 @@
  *
  * Author: Rahul Anand [ eternalthinker.co ], Jan 2015
  *
+ * Thanks to following tutorials/code:
+ *   
+ *   https://github.com/marksteve/dtmb
+ *   http://www.codevinsky.com/phaser-2-0-tutorial-flappy-bird-part-5/
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -11,21 +16,109 @@
 
 $(document).ready(function() {
 
+var Scoreboard = function(game) { 
+  var gameover;
+
+  Phaser.Group.call(this, game);
+  //gameover = this.create(this.game.width / 2, 100, 'gameover');
+  //gameover.anchor.setTo(0.5, 0.5);
+
+  this.scoreboard = this.create(this.game.width / 2, 200, 'scoreboard');
+  this.scoreboard.anchor.setTo(0.5, 0.5);
+
+  this.scoreText = this.game.add.bitmapText(this.scoreboard.width, 180, 'flappyfont', '', 18);
+  this.add(this.scoreText);
+
+  this.bestScoreText = this.game.add.bitmapText(this.scoreboard.width, 230, 'flappyfont', '', 18);
+  this.add(this.bestScoreText);
+
+  // add our start button with a callback
+  this.startButton = this.game.add.button(this.game.width/2, 300, 'start_button', this.startClick, this);
+  this.startButton.anchor.setTo(0.5,0.5);
+
+  this.add(this.startButton);
+
+  this.y = this.game.height;
+  this.x = 0;
+
+};
+Scoreboard.prototype = Object.create(Phaser.Group.prototype);  
+Scoreboard.prototype.constructor = Scoreboard; 
+
+Scoreboard.prototype.show = function(score) {  
+  var medal, bestScore;
+
+  this.scoreText.setText(score.toString());
+
+  if(!!localStorage) {
+    bestScore = localStorage.getItem('bestScore');
+
+    if(!bestScore || bestScore < score) {
+      bestScore = score;
+      localStorage.setItem('bestScore', bestScore);
+    }
+  } else {
+    bestScore = 'N/A';
+  }
+
+  this.bestScoreText.setText(bestScore.toString());
+
+  if(score >= 10 && score < 20)
+  {
+    medal = this.game.add.sprite(-65 , 7, 'medals', 1);
+    medal.anchor.setTo(0.5, 0.5);
+    this.scoreboard.addChild(medal);
+  } else if(score >= 20) {
+    medal = this.game.add.sprite(-65 , 7, 'medals', 0);
+    medal.anchor.setTo(0.5, 0.5);
+    this.scoreboard.addChild(medal);
+  }
+
+  /*if (medal) {    
+    var emitter = this.game.add.emitter(medal.x, medal.y, 400);
+    this.scoreboard.addChild(emitter);
+    emitter.width = medal.width;
+    emitter.height = medal.height;
+
+    emitter.makeParticles('particle');
+
+    emitter.setRotation(-100, 100);
+    emitter.setXSpeed(0,0);
+    emitter.setYSpeed(0,0);
+    emitter.minParticleScale = 0.25;
+    emitter.maxParticleScale = 0.5;
+    emitter.setAll('body.allowGravity', false);
+
+    emitter.start(false, 1000, 1000);
+  } */
+
+  this.game.add.tween(this).to({y: 0}, 1000, Phaser.Easing.Bounce.Out, true);
+};
+
+Scoreboard.prototype.startClick = function() {  
+  this.game.state.start('play');
+};
+
 var GAP = 0;
 var SPEED = 200;
 var game = new Phaser.Game(400, 600, Phaser.AUTO, 'game');
 
-var mainState = {
+var playState = {
     preload: function() { 
         game.stage.backgroundColor = '#71c5cf';
         game.load.image('bird', 'assets/bird.png'); 
         game.load.image('bottom_pipe', 'assets/bottom_pipe.png');  
         game.load.image('ground', 'assets/ground.png');  
+        game.load.image('start_button', 'assets/start-button.png');
+        game.load.image('scoreboard', 'assets/scoreboard.png');
+        game.load.spritesheet('medals', 'assets/medals.png', 44, 46, 2);
 
         game.load.audio('jump', 'assets/jump.wav'); 
-        game.load.audio('pipe-hit', 'assets/pipe-hit.wav'); 
-        game.load.audio('ground-hit', 'assets/ground-hit.wav'); 
+        game.load.audio('pipe_hit', 'assets/pipe-hit.wav'); 
+        game.load.audio('ground_hit', 'assets/ground-hit.wav'); 
         game.load.audio('score', 'assets/score.wav'); 
+
+        this.load.bitmapFont('flappyfont', 'assets/fonts/flappyfont/flappyfont.png', 'assets/fonts/flappyfont/flappyfont.fnt');
     },
 
     create: function() { 
@@ -53,8 +146,8 @@ var mainState = {
         var spaceKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
         spaceKey.onDown.add(this.jump, this);
         this.jumpSound = game.add.audio('jump');  
-        this.pipeHitSound = game.add.audio('pipe-hit');
-        this.groundHitSound = game.add.audio('ground-hit');
+        this.pipeHitSound = game.add.audio('pipe_hit');
+        this.groundHitSound = game.add.audio('ground_hit');
         this.scoreSound = game.add.audio('score');
 
         // Ground
@@ -67,7 +160,8 @@ var mainState = {
 
         // Score
         this.score = 0;  
-        this.labelScore = game.add.text(20, 20, "0", { font: "30px Arial", fill: "#ffffff" }); 
+        //this.labelScore = game.add.text(20, 20, "0", { font: "30px Arial", fill: "#ffffff" }); 
+        this.scoreText = this.game.add.bitmapText(this.game.width/2, 10, 'flappyfont', this.score.toString(), 24);
 
         GAP = Math.floor(this.bird.height * 2.5);
     },
@@ -126,6 +220,11 @@ var mainState = {
             inv.body.velocity.x = 0;
         }, this);
         this.ground.autoScroll(0, 0);
+
+        // Score screen
+        this.scoreboard = new Scoreboard(game);
+        this.game.add.existing(this.scoreboard);
+        this.scoreboard.show(this.score);
     },
 
     hitGround: function () {
@@ -180,11 +279,13 @@ var mainState = {
         this.scoreSound.play();
         invisible.kill();
         this.score += 1;  
-        this.labelScore.text = this.score; 
+        // this.labelScore.text = this.score; 
+        this.scoreText.destroy();
+        this.scoreText = this.game.add.bitmapText(this.game.width/2, 10, 'flappyfont', this.score.toString(), 24);
     },
 };
 
-game.state.add('main', mainState);  
-game.state.start('main'); 
+game.state.add('play', playState);  
+game.state.start('play'); 
 
 });
