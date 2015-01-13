@@ -108,14 +108,34 @@ var GAP = 0;
 var SPEED = 200;
 var game = new Phaser.Game(400, 600, Phaser.AUTO, 'game');
 
-var playState = {
-    preload: function() { 
+var bootState = {
+    preload: function () {
+        game.load.image('preloader', 'assets/preloader.gif');
+    },
+
+    create: function () {
+        game.input.maxPointers = 1; // No multi touch
         game.stage.backgroundColor = '#71c5cf';
+        game.state.start('load');
+    },
+}
+
+var loadState = {
+    preload: function () {
+        game.load.onLoadComplete.addOnce(this.onLoadComplete, this);
+        this.asset = game.add.sprite(game.width/2, game.height/2, 'preloader');
+        this.asset.anchor.setTo(0.5, 0.5);
+        game.load.setPreloadSprite(this.asset);
+
+        // Load assets here
         game.load.image('bird', 'assets/bird.png'); 
         game.load.image('bottom_pipe', 'assets/bottom_pipe.png');  
         game.load.image('ground', 'assets/ground.png');  
         game.load.image('start_button', 'assets/start-button.png');
         game.load.image('scoreboard', 'assets/scoreboard.png');
+        game.load.image('background', 'assets/background.png');
+        game.load.image('title', 'assets/title.png');
+
         game.load.spritesheet('medals', 'assets/medals.png', 44, 46, 2);
 
         game.load.audio('jump', 'assets/jump.wav'); 
@@ -126,7 +146,66 @@ var playState = {
         this.load.bitmapFont('flappyfont', 'assets/fonts/flappyfont/flappyfont.png', 'assets/fonts/flappyfont/flappyfont.fnt');
     },
 
+    create: function () {
+        this.asset.cropEnabled = false;
+    },
+
+    update: function () {
+        if(!!this.ready) {
+            game.state.start('menu');
+        }
+    },
+
+    onLoadComplete: function () {
+        this.ready = true;
+    }
+}
+
+var menuState = {
+    preload: function () {
+
+    },
+
+    create: function () {
+        this.background = this.game.add.tileSprite(0, 0, game.world.width, game.world.height, 'background');
+
+        this.groundH = game.cache.getImage('ground').height;
+        this.skyH = game.world.height - this.groundH;
+        this.ground = game.add.tileSprite(0, this.skyH, game.world.width, this.groundH, 'ground');
+        this.ground.autoScroll(-SPEED, 0);
+
+        this.titleGroup = this.game.add.group();
+        this.title = this.game.add.sprite(0,0,'title');
+        this.titleGroup.add(this.title);
+        this.bird = this.game.add.sprite(200,5,'bird');
+        this.titleGroup.add(this.bird);
+        //this.bird.animations.add('flap');
+        //this.bird.animations.play('flap', 12, true);
+        this.titleGroup.x = game.width/2 - this.titleGroup.width/2;
+        this.titleGroup.y = 100;
+        this.game.add.tween(this.titleGroup).to({y:115}, 350, Phaser.Easing.Linear.NONE, true, 0, 1000, true);
+
+        this.startButton = this.game.add.button(this.game.width/2, 300, 'start_button', this.startClick, this);
+        this.startButton.anchor.setTo(0.5,0.5);
+    },
+
+    update: function () {
+
+    },
+
+    startClick: function () {  
+        this.game.state.start('play');
+    }
+}
+
+var playState = {
+    preload: function() { 
+        
+    },
+
     create: function() { 
+        this.background = this.game.add.tileSprite(0, 0, game.world.width, game.world.height, 'background');
+
         game.physics.startSystem(Phaser.Physics.ARCADE);
 
         // Pipes
@@ -191,6 +270,13 @@ var playState = {
                 this.bird.angle = -180;
             }
         }
+    },
+
+    shutdown: function() {  
+        game.input.keyboard.removeKey(Phaser.Keyboard.SPACEBAR);
+        this.bird.destroy();
+        this.pipes.destroy();
+        this.invisibles.destroy();
     },
 
     jump: function() {  
@@ -290,7 +376,10 @@ var playState = {
     },
 };
 
+game.state.add('boot', bootState);
+game.state.add('load', loadState);
+game.state.add('menu', menuState);
 game.state.add('play', playState);  
-game.state.start('play'); 
+game.state.start('boot'); 
 
 });
