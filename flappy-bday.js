@@ -135,6 +135,7 @@ var loadState = {
         game.load.image('scoreboard', 'assets/scoreboard.png');
         game.load.image('background', 'assets/background.png');
         game.load.image('title', 'assets/title.png');
+        game.load.image('get_ready', 'assets/get-ready.png');
 
         game.load.spritesheet('medals', 'assets/medals.png', 44, 46, 2);
 
@@ -167,7 +168,7 @@ var menuState = {
     },
 
     create: function () {
-        this.background = this.game.add.tileSprite(0, 0, game.world.width, game.world.height, 'background');
+        //this.background = this.game.add.tileSprite(0, 0, game.world.width, game.world.height, 'background');
 
         this.groundH = game.cache.getImage('ground').height;
         this.skyH = game.world.height - this.groundH;
@@ -204,9 +205,18 @@ var playState = {
     },
 
     create: function() { 
-        this.background = this.game.add.tileSprite(0, 0, game.world.width, game.world.height, 'background');
+        //this.background = this.game.add.tileSprite(0, 0, game.world.width, game.world.height, 'background');
 
         game.physics.startSystem(Phaser.Physics.ARCADE);
+
+        // Initial instructions
+        this.instructionGroup = game.add.group();
+        this.instructionGroup.add(game.add.sprite(this.game.width/2, 100,'get_ready'));
+        var instructionText = game.add.bitmapText(0, 325, 'flappyfont', "Click or Tap SPACE to fly", 20);
+        instructionText.x = game.width/2 - instructionText.width/2;
+        this.instructionGroup.add(instructionText);
+        this.instructionGroup.setAll('anchor.x', 0.5);
+        this.instructionGroup.setAll('anchor.y', 0.5);
 
         // Pipes
         this.pipes = game.add.group(); 
@@ -217,18 +227,24 @@ var playState = {
         this.invisibles.enableBody = true;
         this.invisibles.createMultiple(5);
 
-        this.timer = game.time.events.loop(1500, this.addRowOfPipes, this); 
-
         // Bird
         this.bird = game.add.sprite(100, 245, 'bird');
         game.physics.arcade.enable(this.bird);
         this.bird.body.gravity.y = 1000;  
         this.bird.anchor.setTo(-0.2, 0.5); 
         this.bird.onGround = false;
-        this.bird.body.allowRotation = true;
+        this.bird.flying = false; // State before the first tap
+        this.bird.body.allowGravity = false;
 
-        var spaceKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
-        spaceKey.onDown.add(this.jump, this);
+        this.flapKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+        this.flapKey.onDown.addOnce(this.startGame, this);
+        this.flapKey.onDown.add(this.jump, this);
+        // Add mouse/touch controls
+        game.input.onDown.add(this.jump, this);
+        game.input.onDown.addOnce(this.startGame, this);
+        // Keep the spacebar from propogating up to the browser
+        game.input.keyboard.addKeyCapture([Phaser.Keyboard.SPACEBAR]);
+
         this.jumpSound = game.add.audio('jump');  
         this.pipeHitSound = game.add.audio('pipe_hit');
         this.groundHitSound = game.add.audio('ground_hit');
@@ -247,11 +263,15 @@ var playState = {
         //this.labelScore = game.add.text(20, 20, "0", { font: "30px Arial", fill: "#ffffff" }); 
         this.scoreText = this.game.add.bitmapText(this.game.width/2, 10, 'flappyfont', this.score.toString(), 24);
 
-        GAP = Math.floor(this.bird.height * 2.5);
+        GAP = Math.floor(this.bird.height * 2.6);
     },
 
     update: function() {
         //game.debug.body(this.bird);
+
+        if (! this.bird.flying) {
+            return;
+        }
 
         if (this.bird.inWorld == false) {
             this.restartGame();
@@ -277,6 +297,14 @@ var playState = {
         this.bird.destroy();
         this.pipes.destroy();
         this.invisibles.destroy();
+    },
+
+    startGame: function() {
+        this.bird.body.allowGravity = true;
+        this.bird.flying = true;
+
+        this.timer = game.time.events.loop(1500, this.addRowOfPipes, this); // Pipe generate timer
+        this.instructionGroup.destroy();
     },
 
     jump: function() {  
