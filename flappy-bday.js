@@ -23,14 +23,17 @@ var Scoreboard = function(game) {
   //gameover = this.create(this.game.width / 2, 100, 'gameover');
   //gameover.anchor.setTo(0.5, 0.5);
 
-  this.scoreboard = this.create(this.game.width / 2, 200, 'scoreboard');
+  this.scoreboard = this.create(this.game.width/2, 200, 'scoreboard');
   this.scoreboard.anchor.setTo(0.5, 0.5);
 
-  this.scoreText = this.game.add.bitmapText(this.scoreboard.width, 180, 'flappyfont', '', 18);
+  this.scoreText = this.game.add.bitmapText(this.scoreboard.width + 20, 180, 'flappyfont', '', 18);
   this.add(this.scoreText);
 
-  this.bestScoreText = this.game.add.bitmapText(this.scoreboard.width, 230, 'flappyfont', '', 18);
+  this.bestScoreText = this.game.add.bitmapText(this.scoreboard.width + 20, 230, 'flappyfont', '', 18);
   this.add(this.bestScoreText);
+
+  this.medalText = this.game.add.bitmapText(this.scoreboard.x - this.scoreboard.width/2, 110, 'flappyfont', '', 18);
+  this.add(this.medalText);
 
   // add our start button with a callback
   this.startButton = this.game.add.button(this.game.width/2, 300, 'start_button', this.startClick, this);
@@ -73,6 +76,8 @@ Scoreboard.prototype.show = function(score) {
     medal.anchor.setTo(0.5, 0.5);
     this.scoreboard.addChild(medal);
   }
+
+  this.medalText.setText("no medal");
 
   /*if (medal) {    
     var emitter = this.game.add.emitter(medal.x, medal.y, 400);
