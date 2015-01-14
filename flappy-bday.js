@@ -220,7 +220,7 @@ var playState = {
             cloud.outOfBoundsKill = true;
             // Move clouds
             game.physics.arcade.enableBody(cloud);
-            cloud.body.velocity.x = -this.game.rnd.integerInRange(5, 10);
+            cloud.body.velocity.x = -this.game.rnd.integerInRange(15, 30);
         }
 
         // Initial instructions
@@ -301,7 +301,7 @@ var playState = {
         }
 
         if (this.bird.inWorld == false) {
-            this.restartGame();
+            this.die();
         }
 
         //this.rocket_emitter.x = this.bird.x;
@@ -393,10 +393,6 @@ var playState = {
         this.bird.onGround = true;
         this.bird.animations.play('dummy_fly');
         $.proxy(this.die, this)();
-    },
-
-    restartGame: function() {  
-        game.state.start('play');
     },
 
     addOnePipe: function (yMidGap, flip) {  
