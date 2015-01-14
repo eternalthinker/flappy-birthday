@@ -38,6 +38,9 @@ var Scoreboard = function(game) {
   // add our start button with a callback
   this.startButton = this.game.add.button(this.game.width/2, 300, 'start_button', this.startClick, this);
   this.startButton.anchor.setTo(0.5,0.5);
+  // May cause the game to restart without even showing the scoreboard (continuous pressing)
+  //this.spaceKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR); 
+  //this.spaceKey.onDown.add(this.startClick, this);
 
   this.add(this.startButton);
 
@@ -136,9 +139,10 @@ var loadState = {
         game.load.image('background', 'assets/background.png');
         game.load.image('title', 'assets/title.png');
         game.load.image('get_ready', 'assets/get-ready.png');
+        game.load.image('rocket_fire_particle', 'assets/rocket_fire_particle.png');
 
         game.load.spritesheet('medals', 'assets/medals.png', 44, 46, 2);
-        game.load.spritesheet('bird', 'assets/bird_sheet.png', 28, 52, 4); 
+        game.load.spritesheet('bird', 'assets/bird_sheet.png', 28, 52, 4, 0, 2); 
 
         game.load.audio('jump', 'assets/jump.wav'); 
         game.load.audio('pipe_hit', 'assets/pipe-hit.wav'); 
@@ -189,10 +193,16 @@ var menuState = {
 
         this.startButton = this.game.add.button(this.game.width/2, 300, 'start_button', this.startClick, this);
         this.startButton.anchor.setTo(0.5,0.5);
+        this.spaceKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+        this.spaceKey.onDown.add(this.startClick, this);
     },
 
     update: function () {
 
+    },
+
+    shutdown: function() {  
+        this.game.input.keyboard.removeKey(Phaser.Keyboard.SPACEBAR);
     },
 
     startClick: function () {  
@@ -209,6 +219,7 @@ var playState = {
         //this.background = this.game.add.tileSprite(0, 0, game.world.width, game.world.height, 'background');
 
         game.physics.startSystem(Phaser.Physics.ARCADE);
+        this.started = false;
 
         // Initial instructions
         this.instructionGroup = game.add.group();
@@ -229,6 +240,8 @@ var playState = {
         this.invisibles.createMultiple(5);
 
         // Bird
+        this.rocket_emitter = this.game.add.emitter(0, 0, 400);
+
         this.bird = game.add.sprite(100, 245, 'bird', 0);
         game.physics.arcade.enable(this.bird);
         this.bird.body.gravity.y = 1000;  
@@ -236,17 +249,30 @@ var playState = {
         this.bird.onGround = false;
         this.bird.flying = false; // State before the first tap
         this.bird.body.allowGravity = false;
+        this.bird.animations.add('dummy_fly', [1,2,3], 10, true);
         this.bird.animations.add('fly', [1,2,3], 10, false);
         this.bird.events.onAnimationComplete.add(function () {
             this.bird.frame = 0;
+            this.rocket_emitter.on = false;
         }, this);
+        this.bird.animations.play('dummy_fly');
+
+        this.rocket_emitter.width = 2;
+        this.rocket_emitter.height = 2;
+        this.rocket_emitter.makeParticles('rocket_fire_particle');
+        this.rocket_emitter.setRotation(-100, 100);
+        this.rocket_emitter.setXSpeed(0,0);
+        this.rocket_emitter.setYSpeed(0,0);
+        this.rocket_emitter.minParticleScale = 0.25;
+        this.rocket_emitter.maxParticleScale = 0.5;
+        this.rocket_emitter.setAll('body.allowGravity', false);
 
         this.flapKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
         this.flapKey.onDown.addOnce(this.startGame, this);
         this.flapKey.onDown.add(this.jump, this);
         // Add mouse/touch controls
-        game.input.onDown.add(this.jump, this);
         game.input.onDown.addOnce(this.startGame, this);
+        game.input.onDown.add(this.jump, this);
         // Keep the spacebar from propogating up to the browser
         game.input.keyboard.addKeyCapture([Phaser.Keyboard.SPACEBAR]);
 
@@ -268,7 +294,7 @@ var playState = {
         //this.labelScore = game.add.text(20, 20, "0", { font: "30px Arial", fill: "#ffffff" }); 
         this.scoreText = this.game.add.bitmapText(this.game.width/2, 10, 'flappyfont', this.score.toString(), 24);
 
-        GAP = Math.floor(this.bird.height * 2.6);
+        GAP = Math.floor(this.bird.height * 2.5);
     },
 
     update: function() {
@@ -281,6 +307,9 @@ var playState = {
         if (this.bird.inWorld == false) {
             this.restartGame();
         }
+
+        this.rocket_emitter.x = this.bird.x;
+        this.rocket_emitter.y = this.bird.y;
 
         game.physics.arcade.overlap(this.bird, this.pipes, this.die, null, this); 
         game.physics.arcade.overlap(this.bird, this.invisibles, this.incrementScore, null, this); 
@@ -298,15 +327,20 @@ var playState = {
     },
 
     shutdown: function() {  
-        game.input.keyboard.removeKey(Phaser.Keyboard.SPACEBAR);
+        this.game.input.keyboard.removeKey(Phaser.Keyboard.SPACEBAR);
         this.bird.destroy();
         this.pipes.destroy();
         this.invisibles.destroy();
     },
 
     startGame: function() {
+        if (!! this.started) {
+            return;
+        }
+        this.started = true;
         this.bird.body.allowGravity = true;
         this.bird.flying = true;
+        this.bird.animations.stop('dummy_fly');
 
         this.timer = game.time.events.loop(1500, this.addRowOfPipes, this); // Pipe generate timer
         this.instructionGroup.destroy();
@@ -322,6 +356,8 @@ var playState = {
 
         var animation = game.add.tween(this.bird).to({angle: 20}, 100).start();
         this.bird.animations.play('fly');
+        this.rocket_emitter.start(false, 1000, 1000);
+
     },
 
     die: function() {  
@@ -357,6 +393,7 @@ var playState = {
 
         this.groundHitSound.play();
         this.bird.onGround = true;
+        this.bird.animations.play('dummy_fly');
         $.proxy(this.die, this)();
     },
 
