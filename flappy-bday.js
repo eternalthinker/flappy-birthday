@@ -16,10 +16,10 @@
 
 $(document).ready(function() {
 
-var Scoreboard = function(game) { 
-  var gameover;
+    var Scoreboard = function(game) { 
+      var gameover;
 
-  Phaser.Group.call(this, game);
+      Phaser.Group.call(this, game);
   //gameover = this.create(this.game.width / 2, 100, 'gameover');
   //gameover.anchor.setTo(0.5, 0.5);
 
@@ -62,45 +62,29 @@ Scoreboard.prototype.show = function(score) {
     if(!bestScore || bestScore < score) {
       bestScore = score;
       localStorage.setItem('bestScore', bestScore);
-    }
-  } else {
+  }
+} else {
     bestScore = 'N/A';
-  }
+}
 
-  this.bestScoreText.setText(bestScore.toString());
+this.bestScoreText.setText(bestScore.toString());
 
-  if(score >= 10 && score < 20)
-  {
-    medal = this.game.add.sprite(-65 , 7, 'medals', 1);
-    medal.anchor.setTo(0.5, 0.5);
-    this.scoreboard.addChild(medal);
-  } else if(score >= 20) {
+if (score >= 20)
+{
     medal = this.game.add.sprite(-65 , 7, 'medals', 0);
+} else if(score >= 10) {
+    medal = this.game.add.sprite(-65 , 7, 'medals', 1);
+}
+
+if (medal) {    
     medal.anchor.setTo(0.5, 0.5);
     this.scoreboard.addChild(medal);
-  }
+    this.medalText.setText("got medal");
+} else { 
+    this.medalText.setText("no medal");
+}
 
-  this.medalText.setText("no medal");
-
-  /*if (medal) {    
-    var emitter = this.game.add.emitter(medal.x, medal.y, 400);
-    this.scoreboard.addChild(emitter);
-    emitter.width = medal.width;
-    emitter.height = medal.height;
-
-    emitter.makeParticles('particle');
-
-    emitter.setRotation(-100, 100);
-    emitter.setXSpeed(0,0);
-    emitter.setYSpeed(0,0);
-    emitter.minParticleScale = 0.25;
-    emitter.maxParticleScale = 0.5;
-    emitter.setAll('body.allowGravity', false);
-
-    emitter.start(false, 1000, 1000);
-  } */
-
-  this.game.add.tween(this).to({y: 0}, 1000, Phaser.Easing.Bounce.Out, true);
+this.game.add.tween(this).to({y: 0}, 1000, Phaser.Easing.Bounce.Out, true);
 };
 
 Scoreboard.prototype.startClick = function() {  
@@ -118,7 +102,7 @@ var bootState = {
 
     create: function () {
         game.input.maxPointers = 1; // No multi touch
-        game.stage.backgroundColor = '#71c5cf';
+        game.stage.backgroundColor = '7bd0e5';
         game.state.start('load');
     },
 }
@@ -240,8 +224,6 @@ var playState = {
         this.invisibles.createMultiple(5);
 
         // Bird
-        this.rocket_emitter = this.game.add.emitter(0, 0, 400);
-
         this.bird = game.add.sprite(100, 245, 'bird', 0);
         game.physics.arcade.enable(this.bird);
         this.bird.body.gravity.y = 1000;  
@@ -253,19 +235,15 @@ var playState = {
         this.bird.animations.add('fly', [1,2,3], 10, false);
         this.bird.events.onAnimationComplete.add(function () {
             this.bird.frame = 0;
-            this.rocket_emitter.on = false;
         }, this);
         this.bird.animations.play('dummy_fly');
 
-        this.rocket_emitter.width = 2;
-        this.rocket_emitter.height = 2;
+        this.rocket_emitter = game.add.emitter(0, 0, 100);
         this.rocket_emitter.makeParticles('rocket_fire_particle');
-        this.rocket_emitter.setRotation(-100, 100);
-        this.rocket_emitter.setXSpeed(0,0);
-        this.rocket_emitter.setYSpeed(0,0);
-        this.rocket_emitter.minParticleScale = 0.25;
-        this.rocket_emitter.maxParticleScale = 0.5;
-        this.rocket_emitter.setAll('body.allowGravity', false);
+        this.rocket_emitter.gravity = 200;
+        this.rocket_emitter.setXSpeed(-20, -50);
+        this.rocket_emitter.setRotation(0, -90);
+
 
         this.flapKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
         this.flapKey.onDown.addOnce(this.startGame, this);
@@ -308,8 +286,8 @@ var playState = {
             this.restartGame();
         }
 
-        this.rocket_emitter.x = this.bird.x;
-        this.rocket_emitter.y = this.bird.y;
+        //this.rocket_emitter.x = this.bird.x;
+        //this.rocket_emitter.y = this.bird.y;
 
         game.physics.arcade.overlap(this.bird, this.pipes, this.die, null, this); 
         game.physics.arcade.overlap(this.bird, this.invisibles, this.incrementScore, null, this); 
@@ -356,8 +334,10 @@ var playState = {
 
         var animation = game.add.tween(this.bird).to({angle: 20}, 100).start();
         this.bird.animations.play('fly');
-        this.rocket_emitter.start(false, 1000, 1000);
 
+        this.rocket_emitter.x = this.bird.x;
+        this.rocket_emitter.y = this.bird.y;
+        this.rocket_emitter.start(true, 2000, null, 10);
     },
 
     die: function() {  
@@ -398,7 +378,7 @@ var playState = {
     },
 
     restartGame: function() {  
-        game.state.start('main');
+        game.state.start('play');
     },
 
     addOnePipe: function (yMidGap, flip) {  
