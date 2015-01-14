@@ -106,7 +106,7 @@ var bootState = {
 
     create: function () {
         game.input.maxPointers = 1; // No multi touch
-        game.stage.backgroundColor = '7bd0e5';
+        game.stage.backgroundColor = '66c1c4';
         game.state.start('load');
     },
 }
