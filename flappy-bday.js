@@ -128,7 +128,7 @@ var loadState = {
         game.load.setPreloadSprite(this.asset);
 
         // Load assets here
-        game.load.image('bird', 'assets/bird.png'); 
+        //game.load.image('bird', 'assets/bird.png'); 
         game.load.image('bottom_pipe', 'assets/bottom_pipe.png');  
         game.load.image('ground', 'assets/ground.png');  
         game.load.image('start_button', 'assets/start-button.png');
@@ -138,6 +138,7 @@ var loadState = {
         game.load.image('get_ready', 'assets/get-ready.png');
 
         game.load.spritesheet('medals', 'assets/medals.png', 44, 46, 2);
+        game.load.spritesheet('bird', 'assets/bird_sheet.png', 28, 52, 4); 
 
         game.load.audio('jump', 'assets/jump.wav'); 
         game.load.audio('pipe_hit', 'assets/pipe-hit.wav'); 
@@ -228,13 +229,17 @@ var playState = {
         this.invisibles.createMultiple(5);
 
         // Bird
-        this.bird = game.add.sprite(100, 245, 'bird');
+        this.bird = game.add.sprite(100, 245, 'bird', 0);
         game.physics.arcade.enable(this.bird);
         this.bird.body.gravity.y = 1000;  
         this.bird.anchor.setTo(-0.2, 0.5); 
         this.bird.onGround = false;
         this.bird.flying = false; // State before the first tap
         this.bird.body.allowGravity = false;
+        this.bird.animations.add('fly', [1,2,3], 10, false);
+        this.bird.events.onAnimationComplete.add(function () {
+            this.bird.frame = 0;
+        }, this);
 
         this.flapKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
         this.flapKey.onDown.addOnce(this.startGame, this);
@@ -315,9 +320,8 @@ var playState = {
         this.jumpSound.play();
         this.bird.body.velocity.y = -350;
 
-        var animation = game.add.tween(this.bird);
-        animation.to({angle: 20}, 100);
-        animation.start();
+        var animation = game.add.tween(this.bird).to({angle: 20}, 100).start();
+        this.bird.animations.play('fly');
     },
 
     die: function() {  
