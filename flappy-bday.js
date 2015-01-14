@@ -69,19 +69,23 @@ Scoreboard.prototype.show = function(score) {
 
 this.bestScoreText.setText(bestScore.toString());
 
-if (score >= 20)
+if (score >= 30)
 {
     medal = this.game.add.sprite(-65 , 7, 'medals', 0);
-} else if(score >= 10) {
+    this.medalText.setText("birthday gift");
+} else if(score >= 23) {
     medal = this.game.add.sprite(-65 , 7, 'medals', 1);
+    this.medalText.setText("birthday cake");
+} else if(score >= 10) {
+    medal = this.game.add.sprite(-65 , 7, 'medals', 2);
+    this.medalText.setText("birthday hat");
 }
 
 if (medal) {    
     medal.anchor.setTo(0.5, 0.5);
     this.scoreboard.addChild(medal);
-    this.medalText.setText("got medal");
 } else { 
-    this.medalText.setText("no medal");
+    this.medalText.setText("no gifts");
 }
 
 this.game.add.tween(this).to({y: 0}, 1000, Phaser.Easing.Bounce.Out, true);
@@ -124,8 +128,9 @@ var loadState = {
         game.load.image('title', 'assets/title.png');
         game.load.image('get_ready', 'assets/get-ready.png');
         game.load.image('rocket_fire_particle', 'assets/rocket_fire_particle.png');
+        game.load.image('cloud', 'assets/cloud.png');
 
-        game.load.spritesheet('medals', 'assets/medals.png', 44, 46, 2);
+        game.load.spritesheet('medals', 'assets/medals.png', 44, 46, 3);
         game.load.spritesheet('bird', 'assets/bird_sheet.png', 28, 52, 4, 0, 2); 
 
         game.load.audio('jump', 'assets/jump.wav'); 
@@ -167,10 +172,10 @@ var menuState = {
         this.titleGroup = this.game.add.group();
         this.title = this.game.add.sprite(0,0,'title');
         this.titleGroup.add(this.title);
-        this.bird = this.game.add.sprite(200,5,'bird');
+        this.bird = this.game.add.sprite(120, 50, 'bird');
+        this.bird.animations.add('dummy_fly', [1,2,3], 10, true);
+        this.bird.animations.play('dummy_fly');
         this.titleGroup.add(this.bird);
-        //this.bird.animations.add('flap');
-        //this.bird.animations.play('flap', 12, true);
         this.titleGroup.x = game.width/2 - this.titleGroup.width/2;
         this.titleGroup.y = 100;
         this.game.add.tween(this.titleGroup).to({y:115}, 350, Phaser.Easing.Linear.NONE, true, 0, 1000, true);
@@ -204,6 +209,19 @@ var playState = {
 
         game.physics.startSystem(Phaser.Physics.ARCADE);
         this.started = false;
+
+        // Clouds
+        this.clouds = game.add.group();
+        for(var i=0; i<3; i++){
+            var cloud = game.add.sprite(game.rnd.integerInRange(0, game.width), game.rnd.integerInRange(0, 50), 'cloud');
+            cloud.anchor.setTo(0.5, 0);
+            this.clouds.add(cloud);
+            cloud.checkWorldBounds = true;
+            cloud.outOfBoundsKill = true;
+            // Move clouds
+            game.physics.arcade.enableBody(cloud);
+            cloud.body.velocity.x = -this.game.rnd.integerInRange(5, 10);
+        }
 
         // Initial instructions
         this.instructionGroup = game.add.group();
