@@ -130,6 +130,7 @@ var loadState = {
 
         game.load.spritesheet('medals', 'assets/medals.png', 44, 46, 3);
         game.load.spritesheet('bird', 'assets/bird_sheet.png', 28, 52, 4, 0, 2); 
+        game.load.spritesheet('ra', 'assets/ra_sheet.png', 26, 52, 3, 0, 2); 
 
         game.load.audio('jump', 'assets/jump.wav'); 
         game.load.audio('pipe_hit', 'assets/pipe-hit.wav'); 
@@ -279,6 +280,17 @@ var playState = {
         this.ground.body.immovable = true;
         this.ground.autoScroll(-SPEED, 0);
 
+        // RA consolation
+        this.ra_c =  game.add.sprite(this.bird.x - 80, this.skyH - game.cache.getImage('ra').height - 5, 'ra');
+        this.ra_c.animations.add('fly');
+        this.ra_c.animations.play('fly', 10, true);
+        var o_oo = game.add.bitmapText(this.ra_c.x, this.ra_c.y - 30, 'flappyfont', "try again", 20);
+        this.consolationGroup = game.add.group();
+        this.consolationGroup.add(this.ra_c);
+        this.consolationGroup.add(o_oo);
+        this.game.add.tween(this.consolationGroup).to({y:this.consolationGroup.y - 5}, 350, Phaser.Easing.Linear.NONE, true, 0, 1000, true);
+        this.consolationGroup.alpha = 0;
+
         // Score
         this.score = 0;  
         //this.labelScore = game.add.text(20, 20, "0", { font: "30px Arial", fill: "#ffffff" }); 
@@ -387,6 +399,9 @@ var playState = {
         this.bird.onGround = true;
         this.bird.animations.play('dummy_fly');
         $.proxy(this.die, this)();
+        
+        // Show RA consolation        
+        this.game.add.tween(this.consolationGroup).to({alpha:1}, 1000, Phaser.Easing.Linear.NONE, true, 1000);
     },
 
     addOnePipe: function (yMidGap, flip) {  
