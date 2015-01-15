@@ -119,12 +119,10 @@ var loadState = {
         game.load.setPreloadSprite(this.asset);
 
         // Load assets here
-        //game.load.image('bird', 'assets/bird.png'); 
         game.load.image('bottom_pipe', 'assets/bottom_pipe.png');  
         game.load.image('ground', 'assets/ground.png');  
         game.load.image('start_button', 'assets/start-button.png');
         game.load.image('scoreboard', 'assets/scoreboard.png');
-        game.load.image('background', 'assets/background.png');
         game.load.image('title', 'assets/title.png');
         game.load.image('get_ready', 'assets/get-ready.png');
         game.load.image('rocket_fire_particle', 'assets/rocket_fire_particle.png');
@@ -162,8 +160,6 @@ var menuState = {
     },
 
     create: function () {
-        //this.background = this.game.add.tileSprite(0, 0, game.world.width, game.world.height, 'background');
-
         this.groundH = game.cache.getImage('ground').height;
         this.skyH = game.world.height - this.groundH;
         this.ground = game.add.tileSprite(0, this.skyH, game.world.width, this.groundH, 'ground');
@@ -205,8 +201,6 @@ var playState = {
     },
 
     create: function() { 
-        //this.background = this.game.add.tileSprite(0, 0, game.world.width, game.world.height, 'background');
-
         game.physics.startSystem(Phaser.Physics.ARCADE);
         this.started = false;
 
